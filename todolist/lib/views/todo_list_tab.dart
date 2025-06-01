@@ -3,21 +3,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:todolist/models/tag.dart';
 import '../viewmodels/todo_list_viewmodel.dart';
 import '../models/todo.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
-final tagFilterProvider = StateProvider<String?>((ref) => null);
+final tagFilterProvider = StateProvider<Tag?>((ref) => null);
 
 final filteredTodosProvider = Provider<List<Todo>>((ref) {
   final allTodos = ref.watch(todoListViewModelProvider);
   final query = ref.watch(searchQueryProvider).toLowerCase();
   final tagFilter = ref.watch(tagFilterProvider);
 
+  // 태그 필터링: selectedTag(enum)과 todo.tags(List<Tag>)를 직접 비교
   final afterTag = tagFilter == null
       ? allTodos
       : allTodos.where((todo) => todo.tags.contains(tagFilter)).toList();
+
   if (query.isEmpty) return afterTag;
   return afterTag
       .where((todo) => todo.title.toLowerCase().contains(query))
@@ -113,14 +116,16 @@ class TodoListTab extends ConsumerWidget {
                       ...{for (var todo in allTodos) ...todo.tags}
                           .toSet()
                           .map((tag) {
+                        final tagName = tag.name;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(tag),
+                            label: Text(tagName),
                             selected: selectedTag == tag,
                             onSelected: (_) {
+                              final current = ref.read(tagFilterProvider);
                               ref.read(tagFilterProvider.notifier).state =
-                                  (selectedTag == tag) ? null : tag;
+                                  (current == tag) ? null : tag;
                             },
                           ),
                         );

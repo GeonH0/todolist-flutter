@@ -20,7 +20,7 @@ class TodoAdapter extends TypeAdapter<Todo> {
       id: fields[0] as String?,
       title: fields[1] as String,
       imagePath: fields[2] as String?,
-      tags: (fields[3] as List).cast<String>(),
+      tags: (fields[3] as List).cast<Tag>(),
       createdAt: fields[4] as DateTime?,
       updatedAt: fields[5] as DateTime?,
       isCompleted: fields[6] as bool,

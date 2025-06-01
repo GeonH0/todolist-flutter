@@ -1,6 +1,7 @@
 // lib/models/todo.dart
 
 import 'package:hive/hive.dart';
+import 'package:todolist/models/tag.dart';
 import 'package:uuid/uuid.dart';
 
 part 'todo.g.dart';
@@ -17,7 +18,7 @@ class Todo {
   final String? imagePath;
 
   @HiveField(3)
-  final List<String> tags;
+  final List<Tag> tags;
 
   @HiveField(4)
   final DateTime createdAt;
@@ -53,7 +54,7 @@ class Todo {
   Todo copyWith(
       {String? title,
       String? imagePath,
-      List<String>? tags,
+      List<Tag>? tags,
       DateTime? updatedAt,
       bool? isCompleted}) {
     return Todo(
