@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:todolist/views/todo_add_page.dart';
+import 'package:todolist/views/todo_detail/todo_detail_page.dart';
 import 'package:todolist/views/todo_list_tab.dart';
 import 'package:todolist/views/user_info_tab.dart';
 
@@ -76,7 +77,10 @@ final GoRouter appRouter = GoRouter(
             ),
             GoRoute(
               path: ':id',
-              builder: (context, state) => const TodoListTab(),
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return TodoDetailPage(todoId: id);
+              },
             ),
           ],
         ),
