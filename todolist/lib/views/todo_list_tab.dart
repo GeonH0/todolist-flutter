@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:todolist/models/tag.dart';
 import '../viewmodels/todo_list_viewmodel.dart';
+import '../utils/date_time_utils.dart';
 import '../models/todo.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
-
 final tagFilterProvider = StateProvider<Tag?>((ref) => null);
 
 final filteredTodosProvider = Provider<List<Todo>>((ref) {
@@ -68,7 +68,7 @@ class TodoListTab extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${_monthName(DateTime.now().month)} ${DateTime.now().day}, ${DateTime.now().year}',
+                '${monthName(DateTime.now().month)} ${DateTime.now().day}, ${DateTime.now().year}',
                 style: TextStyle(
                   color: colorScheme.onPrimary.withOpacity(0.7),
                 ),
@@ -219,7 +219,7 @@ class TodoListTab extends ConsumerWidget {
                                           context.go('/todos/${todo.id}');
                                         },
                                         child: Text(
-                                          _formatTime(todo.createdAt),
+                                          formatTime(todo.createdAt),
                                           style: TextStyle(
                                             color: colorScheme.onSurface
                                                 .withOpacity(0.6),
@@ -241,31 +241,5 @@ class TodoListTab extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  String _monthName(int month) {
-    const names = [
-      '',
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-    ];
-    return names[month];
-  }
-
-  static String _formatTime(DateTime dt) {
-    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final period = dt.hour < 12 ? 'am' : 'pm';
-    return '$hour:$minute $period';
   }
 }
