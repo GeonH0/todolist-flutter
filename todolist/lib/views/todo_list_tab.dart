@@ -202,19 +202,32 @@ class TodoListTab extends ConsumerWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 12),
+
+                                      // 제목을 터치하면 상세 페이지로 이동
                                       Expanded(
-                                        child: Text(
-                                          todo.title,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: colorScheme.onSurface,
-                                            decoration: isCompleted
-                                                ? TextDecoration.lineThrough
-                                                : TextDecoration.none,
+                                        child: GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () {
+                                            context.go('/todos/${todo.id}');
+                                          },
+                                          child: Text(
+                                            todo.title,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: colorScheme.onSurface,
+                                              decoration: isCompleted
+                                                  ? TextDecoration.lineThrough
+                                                  : TextDecoration.none,
+                                            ),
                                           ),
                                         ),
                                       ),
+
+                                      const SizedBox(width: 12),
+
+                                      // 시간 텍스트를 터치하면 상세 페이지로 이동
                                       GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
                                         onTap: () {
                                           context.go('/todos/${todo.id}');
                                         },
