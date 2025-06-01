@@ -1,6 +1,7 @@
 // lib/viewmodels/todo_list_viewmodel.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:todolist/models/tag.dart';
 import '../models/todo.dart';
 import '../repositories/todo_repository.dart';
 
@@ -25,12 +26,12 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
   Future<void> addTodo({
     required String title,
     String? imagePath,
-    List<String>? tags,
+    List<Tag>? tags,
   }) async {
     final newTodo = Todo(
       title: title,
       imagePath: imagePath,
-      tags: tags ?? [],
+      tags: tags ?? <Tag>[],
     );
     await _repository.insertTodo(newTodo);
     await _loadTodos();
@@ -40,7 +41,7 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
     required String id,
     required String title,
     String? imagePath,
-    List<String>? tags,
+    List<Tag>? tags,
   }) async {
     final oldList = state;
     final oldTodo = oldList.firstWhere((t) => t.id == id);
