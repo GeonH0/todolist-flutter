@@ -5,16 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:todolist/utils/date_time_utils.dart';
+
 import '../models/todo_draft.dart';
 import '../repositories/todo_draft_repository.dart';
 import '../models/tag.dart';
 import '../viewmodels/todo_list_viewmodel.dart';
 
-/// 이미지 경로를 보관하는 Provider
+// → 이미지 경로를 보관하는 Provider
 final todoAddImagePathProvider = StateProvider<String?>((ref) => null);
 
-/// 선택된 문자열 태그를 보관하는 Provider
+// → 선택된 문자열 태그를 보관하는 Provider
 final selectedTagsProvider = StateProvider<List<String>>((ref) => []);
+
+// → 새 Todo를 만들 때 선택한 마감일을 보관할 Provider
+final dueDateProvider = StateProvider<DateTime?>((ref) => null);
 
 class TodoAddPage extends ConsumerStatefulWidget {
   const TodoAddPage({Key? key}) : super(key: key);
@@ -35,13 +40,11 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
     super.initState();
     _draftRepo = HiveTodoDraftRepository();
 
-    // → 기존: ref.read(selectedTagsProvider.notifier).state = [];
-    //          ref.read(todoAddImagePathProvider.notifier).state = null;
-
-    // 수정: 위젯 트리가 완전히 그려진 다음에 Provider를 초기화하도록 연기
+    // 위젯 트리 렌더링 후 프로바이더 초기화 및 드래프트 확인
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(selectedTagsProvider.notifier).state = [];
       ref.read(todoAddImagePathProvider.notifier).state = null;
+      ref.read(dueDateProvider.notifier).state = null;
       _checkAndLoadDraft();
     });
   }
@@ -85,6 +88,10 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
   void _loadDraftToUI(TodoDraft draft) {
     _titleController.text = draft.title;
     ref.read(todoAddImagePathProvider.notifier).state = draft.imagePath;
+    // Draft 모델에 dueDate 필드가 있다면 로드해 주면 됩니다.
+    if (draft.dueDate != null) {
+      ref.read(dueDateProvider.notifier).state = draft.dueDate!;
+    }
     final stringTags = draft.tags.map((t) => t.name).toList();
     ref.read(selectedTagsProvider.notifier).state = stringTags;
   }
@@ -110,13 +117,40 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
     }
   }
 
+  /// 달력 팝업을 띄워 마감일을 고르게 하는 함수
+  Future<void> _pickDueDate() async {
+    final now = DateTime.now();
+    final initial = ref.read(dueDateProvider) ?? now;
+    final firstDate = DateTime(now.year - 1, now.month, now.day);
+    final lastDate = DateTime(now.year + 5, 12, 31);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+
+    if (picked != null) {
+      ref.read(dueDateProvider.notifier).state = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+      );
+    }
+  }
+
   Future<void> _saveDraft() async {
     final title = _titleController.text.trim();
     final imagePath = ref.read(todoAddImagePathProvider);
     final selectedTags = ref.read(selectedTagsProvider);
+    final due = ref.read(dueDateProvider);
 
-    // 1) 제목, 이미지, 태그 모두 비어 있으면 저장하지 않음
-    if (title.isEmpty && imagePath == null && selectedTags.isEmpty) {
+    // 1) 제목, 이미지, 태그, 마감일 모두 비어 있으면 저장하지 않음
+    if (title.isEmpty &&
+        imagePath == null &&
+        selectedTags.isEmpty &&
+        due == null) {
       return;
     }
 
@@ -125,6 +159,7 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
       title: title,
       imagePath: imagePath,
       tags: selectedTags.map(_stringToTag).toList(),
+      dueDate: due, // TodoDraft에 dueDate 필드를 추가했다고 가정
     );
     await _draftRepo.saveDraft(draft);
 
@@ -146,12 +181,14 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
     final selectedEnumTags =
         ref.read(selectedTagsProvider).map(_stringToTag).toList();
     final imagePath = ref.read(todoAddImagePathProvider);
+    final due = ref.read(dueDateProvider);
 
-    // 1) ViewModel을 통해 Hive에 새 Todo 추가
+    // 1) ViewModel을 통해 Hive에 새 Todo 추가 (dueDate까지 함께 전달)
     await ref.read(todoListViewModelProvider.notifier).addTodo(
           title: title,
           imagePath: imagePath,
           tags: selectedEnumTags,
+          dueDate: due, // dueDate 파라미터 전달
         );
 
     // 2) 정식 저장 후 드래프트 삭제
@@ -160,6 +197,7 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
     // 3) 저장 완료 시 Provider들 초기화
     ref.read(selectedTagsProvider.notifier).state = [];
     ref.read(todoAddImagePathProvider.notifier).state = null;
+    ref.read(dueDateProvider.notifier).state = null;
 
     // 4) 화면 닫기
     if (mounted) {
@@ -188,8 +226,10 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Riverpod로 관리하는 상태들을 구독
     final pickedImagePath = ref.watch(todoAddImagePathProvider);
     final selectedTags = ref.watch(selectedTagsProvider);
+    final dueDate = ref.watch(dueDateProvider);
 
     return WillPopScope(
       onWillPop: _onWillPop,
@@ -285,9 +325,45 @@ class _TodoAddPageState extends ConsumerState<TodoAddPage> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 24),
+
+              // 4) 마감일 선택 영역
+              const Text(
+                '마감일 선택',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickDueDate,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colorScheme.outline),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        dueDate == null
+                            ? '마감일을 선택해주세요'
+                            : '${monthShortName(dueDate.month)} ${dueDate.day}, ${dueDate.year}',
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: dueDate == null
+                              ? colorScheme.onSurfaceVariant
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                      const Icon(Icons.calendar_month_outlined),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
 
-              // 4) 저장 버튼
+              // 5) 저장 버튼
               ElevatedButton(
                 onPressed: _saveTodo,
                 style: ElevatedButton.styleFrom(

@@ -1,12 +1,13 @@
-// lib/views/todo_detail_read.dart
+// lib/views/todo_detail/todo_detail_read_view.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:todolist/utils/date_time_utils.dart';
 import '../../models/todo.dart';
 import '../../models/tag.dart';
 
-/// TodoDetailPage에서 읽기 전용 모드로 사용할 위젯.
-/// [todo]와 날짜/시간 포맷 함수만 전달받으면 이 안에서 모든 UI를 그립니다.
+/// TodoDetailReadView: 읽기 전용 모드용 위젯
+/// - [todo]: 표시할 Todo 객체
 class TodoDetailReadView extends StatelessWidget {
   final Todo todo;
 
@@ -19,6 +20,20 @@ class TodoDetailReadView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // 1) 마감일 표시 문자열 계산
+    String dueDateText() {
+      final d = todo.dueDate;
+      if (d == null) {
+        return '마감일 없음';
+      } else {
+        final y = d.year;
+        final m = d.month.toString().padLeft(2, '0');
+        final day = d.day.toString().padLeft(2, '0');
+        final wd = weekdayShortName(d.weekday);
+        return '$y-$m-$day ($wd)';
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,6 +82,20 @@ class TodoDetailReadView extends StatelessWidget {
               backgroundColor: colorScheme.primaryContainer,
             );
           }).toList(),
+        ),
+        const SizedBox(height: 16),
+
+        // 4) 마감일 읽기 전용 표시
+        Row(
+          children: [
+            Icon(Icons.calendar_today, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Text(
+              'Due Date: ${dueDateText()}',
+              style: textTheme.bodyLarge
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
       ],
     );
