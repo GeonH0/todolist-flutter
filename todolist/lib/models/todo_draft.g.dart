@@ -20,19 +20,22 @@ class TodoDraftAdapter extends TypeAdapter<TodoDraft> {
       title: fields[0] as String,
       imagePath: fields[1] as String?,
       tags: (fields[2] as List).cast<Tag>(),
+      dueDate: fields[3] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TodoDraft obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
       ..write(obj.imagePath)
       ..writeByte(2)
-      ..write(obj.tags);
+      ..write(obj.tags)
+      ..writeByte(3)
+      ..write(obj.dueDate);
   }
 
   @override
