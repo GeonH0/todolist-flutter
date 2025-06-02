@@ -14,9 +14,13 @@ class TodoDraft {
   @HiveField(2)
   List<Tag> tags;
 
+  @HiveField(3)
+  DateTime? dueDate;
+
   TodoDraft({
     this.title = '',
     this.imagePath,
     this.tags = const [],
+    this.dueDate, // 기본값은 null
   });
 }
