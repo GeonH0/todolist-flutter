@@ -1,6 +1,3 @@
-// lib/views/todo_detail_page.dart
-
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +9,7 @@ import 'package:todolist/views/todo_detail/todo_detail_edit.dart';
 
 /// TodoDetailPage의 “읽기 전용/수정 모드” 상태를 관리하는 Provider
 final todoDetailEditingProvider = StateProvider<bool>((ref) => false);
+final dueDateProvider = StateProvider<DateTime?>((ref) => null);
 
 class TodoDetailPage extends ConsumerStatefulWidget {
   final String todoId;
@@ -84,12 +82,14 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
 
     final selectedTags = ref.read(_selectedTagsProvider);
     final imagePath = ref.read(_imagePathProvider);
+    final dueDate = ref.read(dueDateProvider);
 
     await ref.read(todoListViewModelProvider.notifier).updateTodo(
           id: widget.todoId,
           title: title,
           imagePath: imagePath,
           tags: selectedTags,
+          dueDate: dueDate,
         );
 
     if (!mounted) return;
@@ -200,6 +200,7 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage> {
                 selectedTagsProvider: _selectedTagsProvider,
                 imagePathProvider: _imagePathProvider,
                 pickImageCallback: _pickImage,
+                dueDateProvider: dueDateProvider,
               )
             : TodoDetailReadView(
                 todo: todo,
