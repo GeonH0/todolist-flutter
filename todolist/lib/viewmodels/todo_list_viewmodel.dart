@@ -27,11 +27,13 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
     required String title,
     String? imagePath,
     List<Tag>? tags,
+    DateTime? dueDate,
   }) async {
     final newTodo = Todo(
       title: title,
       imagePath: imagePath,
       tags: tags ?? <Tag>[],
+      dueDate: dueDate,
     );
     await _repository.insertTodo(newTodo);
     await _loadTodos();
@@ -42,6 +44,8 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
     required String title,
     String? imagePath,
     List<Tag>? tags,
+    DateTime? dueDate,
+    bool? isCompleted,
   }) async {
     final oldList = state;
     final oldTodo = oldList.firstWhere((t) => t.id == id);
@@ -50,6 +54,8 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
       imagePath: imagePath,
       tags: tags,
       updatedAt: DateTime.now(),
+      isCompleted: isCompleted ?? oldTodo.isCompleted,
+      dueDate: dueDate ?? oldTodo.dueDate,
     );
     await _repository.updateTodo(updatedTodo);
     await _loadTodos();
@@ -67,6 +73,7 @@ class TodoListViewModel extends StateNotifier<List<Todo>> {
     final toggledTodo = oldTodo.copyWith(
       isCompleted: !oldTodo.isCompleted,
       updatedAt: DateTime.now(),
+      dueDate: oldTodo.dueDate,
     );
     await _repository.updateTodo(toggledTodo);
     await _loadTodos();
